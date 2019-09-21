@@ -91,5 +91,23 @@ function evaluatePostfix(postfixExpression, index, currentIter) {
 }
 
 function evaluateExpression(postfixExpression, currentIter) {
-    console.log("Current: " + currentIter);
+    var stack = [];
+    for(i = 0; i < postfixExpression.length; i++) {
+        var token = postfixExpression.charAt(i);
+        var index = identifiers.indexOf(token);
+        if(index === -1) {
+            stack.push(evalOperand(token, stack.pop(), stack.pop()))
+        }
+        else {
+            stack.push(currentIter[index]);
+        }
+    }
+    console.log(stack);
+}
+
+function evalOperand(op, token1, token2) {
+    if(op === '&')
+        return token1 && token2;
+    else if(op === '|')
+        return token1 || token2;
 }
