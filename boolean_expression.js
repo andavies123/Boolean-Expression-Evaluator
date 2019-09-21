@@ -20,6 +20,8 @@ function parseFunction(expression) {
     console.log('stack: ' + stack);
     console.log('identifiers: ' + identifiers);
     console.log('newExpression: ' + postfixExpression);
+    stack = [];
+    evaluatePostfix(postfixExpression, 0, []);
 }
 
 function convertToPostfix(expression) {
@@ -38,6 +40,7 @@ function evaluateToken(token) {
         stack.push(token);
     else if(token === '&' || token === '|')
         evaluateOperand(token);
+
     else if(token === '!')
         stack.push(token);
     else if(isLetter(token) && !identifiers.includes(token)) {
@@ -69,4 +72,24 @@ function getOperandPrecedence(operand) {
 
 function isLetter(str) {
     return str.length === 1 && str.match(/[a-z]/i);
+}
+
+function evaluatePostfix(postfixExpression, index, currentIter) {
+    if(index >= currentIter.length)
+        currentIter.push(false);
+    else
+        currentIter[index] = false;
+    if(index < identifiers.length - 1)
+        evaluatePostfix(postfixExpression, index + 1, currentIter);
+    else if(index === identifiers.length - 1)
+        evaluateExpression(postfixExpression, currentIter);
+    currentIter[index] = true;
+    if(index < identifiers.length - 1)
+        evaluatePostfix(postfixExpression, index + 1, currentIter);
+    else if(index === identifiers.length - 1)
+        evaluateExpression(postfixExpression, currentIter);
+}
+
+function evaluateExpression(postfixExpression, currentIter) {
+    console.log("Current: " + currentIter);
 }
