@@ -9,8 +9,9 @@ var stack;
 var identifiers;
 var postfixExpression;
 
-var precAND = 1;
-var precOR = 2;
+var precNOT = 1;
+var precAND = 2;
+var precOR = 3;
 
 function parseFunction(expression) {
     stack = [];
@@ -38,11 +39,9 @@ function evaluateToken(token) {
         stack.push(token);
     else if(token === ')')
         stack.push(token);
-    else if(token === '&' || token === '|')
+    else if(token === '&' || token === '|' || token === '!')
         evaluateOperand(token);
 
-    else if(token === '!')
-        stack.push(token);
     else if(isLetter(token) && !identifiers.includes(token)) {
         identifiers.push(token);
         postfixExpression += token;
@@ -68,6 +67,8 @@ function getOperandPrecedence(operand) {
         return precAND;
     else if(operand == '|')
         return precOR;
+    else if(operand === '!')
+        return precNOT;
 }
 
 function isLetter(str) {
@@ -96,7 +97,10 @@ function evaluateExpression(postfixExpression, currentIter) {
         var token = postfixExpression.charAt(i);
         var index = identifiers.indexOf(token);
         if(index === -1) {
-            stack.push(evalOperand(token, stack.pop(), stack.pop()))
+            if(token === '!')
+                stack.push(!stack.pop());
+            else
+                stack.push(evalOperand(token, stack.pop(), stack.pop()))
         }
         else {
             stack.push(currentIter[index]);
