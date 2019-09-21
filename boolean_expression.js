@@ -35,10 +35,18 @@ function convertToPostfix(expression) {
 }
 
 function evaluateToken(token) {
+    console.log(stack);
     if(token === '(')
         stack.push(token);
-    else if(token === ')')
-        stack.push(token);
+    else if(token === ')') {
+        while(stack.length > 0) {
+            var currentToken = stack.pop();
+            if(currentToken === '(')
+                break;
+            else
+                postfixExpression += currentToken;
+        }
+    }
     else if(token === '&' || token === '|' || token === '!')
         evaluateOperand(token);
 
@@ -53,7 +61,7 @@ function evaluateToken(token) {
 
 function evaluateOperand(operand) {
     var operandPrec = getOperandPrecedence(operand);
-    if(stack.length === 0 || operandPrec < getOperandPrecedence(stack[stack.length - 1])) {
+    if(stack.length === 0 || stack[stack.length - 1] === '(' || operandPrec < getOperandPrecedence(stack[stack.length - 1])) {
         stack.push(operand);
     }
     else {
