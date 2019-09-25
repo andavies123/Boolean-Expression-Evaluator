@@ -2,42 +2,42 @@ const expressionInput = document.querySelector('#expression_input');
 const calculateBtn = document.querySelector('#calculate_button');
 
 calculateBtn.addEventListener('click', e=> {
-    parseFunction(expressionInput.value.replace(/\s/g, ""));
-})
+    createTruthTable(expressionInput.value.replace(/\s/g, ""));
+});
 
-var stack;
-var identifiers;
-var postfixExpression;
+var precedences = ['!', '&', '|'];
 
-var precNOT = 1;
-var precAND = 2;
-var precOR = 3;
-
-function parseFunction(expression) {
-    stack = [];
-    identifiers = [];
-    postfixExpression = "";
-    convertToPostfix(expression);
-    console.log('stack: ' + stack);
-    console.log('identifiers: ' + identifiers);
-    console.log('newExpression: ' + postfixExpression);
-    stack = [];
-    evaluatePostfix(postfixExpression, 0, []);
+function createTruthTable(expression) {
+    var returnVal = infixToPostfix(expression);
+    var postfixExpression = returnVal[0];
+    var variables = returnVal[1];
+    var inputs = fillTruthTableInputs(variables, []);
+    var outputs = evaluateExpression(postfixExpression, inputs, variables);
+    createTable(variables, expression, inputs, outputs);
 }
 
-function convertToPostfix(expression) {
-    for(i = 0; i < expression.length; i++) {
-        evaluateToken(expression.charAt(i));
+function infixToPostfix(expression) {
+    var stack = [];
+    var postfixExpression = "";
+    var variables = [];
+
+    for(var i = 0; i < expression.length; i++) {
+        var returnVal = evaluateToken(expression.charAt(i), stack, postfixExpression, variables);
+        stack = returnVal[0];
+        postfixExpression = returnVal[1];
+        variables = returnVal[2];
     }
-    while(stack.length !== 0) {
+
+    while(stack.length > 0) {
         postfixExpression += stack.pop();
     }
+    return [postfixExpression, variables];
 }
 
-function evaluateToken(token) {
-    console.log(stack);
-    if(token === '(')
+function evaluateToken(token, stack, postfixExpression, variables) {
+    if(token === '(') {
         stack.push(token);
+    }
     else if(token === ')') {
         while(stack.length > 0) {
             var currentToken = stack.pop();
@@ -47,79 +47,124 @@ function evaluateToken(token) {
                 postfixExpression += currentToken;
         }
     }
-    else if(token === '&' || token === '|' || token === '!')
-        evaluateOperand(token);
-
-    else if(isLetter(token) && !identifiers.includes(token)) {
-        identifiers.push(token);
+    else if(token === '!' || token === '&' || token === '|') {
+        var returnVal = evaluateOperand(token, stack, postfixExpression);
+        stack = returnVal[0];
+        postfixExpression = returnVal[1];
+    }
+    else if(isLetter(token)) {
+        if(!variables.includes(token))
+            variables.push(token);
         postfixExpression += token;
     }
-    else if(isLetter(token) && identifiers.includes(token)) {
-        postfixExpression += token;
-    }
+    return [stack, postfixExpression, variables];
 }
 
-function evaluateOperand(operand) {
-    var operandPrec = getOperandPrecedence(operand);
-    if(stack.length === 0 || stack[stack.length - 1] === '(' || operandPrec < getOperandPrecedence(stack[stack.length - 1])) {
+function evaluateOperand(operand, stack, postfixExpression) {
+    var operandPrecedence = precedences.indexOf(operand);
+
+    if(stack.length === 0 || stack[stack.length - 1] === '(' || operandPrecedence < precedences.indexOf(stack[stack.length - 1])) {
         stack.push(operand);
+        return [stack, postfixExpression];
     }
     else {
         postfixExpression += stack.pop();
-        evaluateOperand(operand);
+        return evaluateOperand(operand, stack, postfixExpression);
     }
-}
-
-function getOperandPrecedence(operand) {
-    if(operand == '&')
-        return precAND;
-    else if(operand == '|')
-        return precOR;
-    else if(operand === '!')
-        return precNOT;
 }
 
 function isLetter(str) {
     return str.length === 1 && str.match(/[a-z]/i);
 }
 
-function evaluatePostfix(postfixExpression, index, currentIter) {
-    if(index >= currentIter.length)
-        currentIter.push(false);
-    else
-        currentIter[index] = false;
-    if(index < identifiers.length - 1)
-        evaluatePostfix(postfixExpression, index + 1, currentIter);
-    else if(index === identifiers.length - 1)
-        evaluateExpression(postfixExpression, currentIter);
-    currentIter[index] = true;
-    if(index < identifiers.length - 1)
-        evaluatePostfix(postfixExpression, index + 1, currentIter);
-    else if(index === identifiers.length - 1)
-        evaluateExpression(postfixExpression, currentIter);
-}
-
-function evaluateExpression(postfixExpression, currentIter) {
-    var stack = [];
-    for(i = 0; i < postfixExpression.length; i++) {
-        var token = postfixExpression.charAt(i);
-        var index = identifiers.indexOf(token);
-        if(index === -1) {
-            if(token === '!')
-                stack.push(!stack.pop());
+function fillTruthTableInputs(variables, inputs) {
+    for(var i = 0; i < Math.pow(2, variables.length); i++) {
+        inputs.push(new Array(variables.length));
+        var binaryStr = i.toString(2);
+        while(binaryStr.length < variables.length)
+            binaryStr = '0' + binaryStr;
+        for(var index = 0; index < binaryStr.length; index++) {
+            if(binaryStr.charAt(index) === '0')
+                inputs[i][index] = false;
             else
-                stack.push(evalOperand(token, stack.pop(), stack.pop()))
-        }
-        else {
-            stack.push(currentIter[index]);
+                inputs[i][index] = true;
         }
     }
-    console.log(stack);
+    return inputs;
 }
 
-function evalOperand(op, token1, token2) {
+function evaluateExpression(postfixExpression, inputs, variables) {
+    console.log(postfixExpression);
+    var outputs = [];
+    for(var i = 0; i < inputs.length; i++) {
+
+        var stack = [];
+        for(var j = 0; j < postfixExpression.length; j++) {
+            var token = postfixExpression.charAt(j);
+            var varIndex = variables.indexOf(token);
+            if(varIndex === -1) {
+                if(token === '!')
+                    stack.push(!stack.pop());
+                else
+                    stack.push(evaluateOperandToken(token, stack.pop(), stack.pop()));
+            }
+            else
+                stack.push(inputs[i][varIndex]);
+        }
+        outputs.push(stack[0]);
+
+    }
+    return outputs;
+}
+
+function evaluateOperandToken(op, token1, token2) {
     if(op === '&')
         return token1 && token2;
     else if(op === '|')
         return token1 || token2;
+}
+
+function createTable(variables, expression, inputs, outputs) {
+    var div = document.getElementById('truthTable');
+    while(div.firstChild) {
+        div.removeChild(div.firstChild);
+    }
+
+    var table = document.createElement("table");
+    table.className = "truthTable";
+    var thead = document.createElement("thead");
+    var tbody = document.createElement("tbody");
+
+    var tr = document.createElement("tr");
+    for(const c of variables) {
+        var td = document.createElement("td");
+        td.appendChild(document.createTextNode(c));
+        tr.appendChild(td);
+    }
+    var td = document.createElement("td");
+    td.appendChild(document.createTextNode(expression));
+    tr.appendChild(td);
+    thead.appendChild(tr);
+
+    for(var i = 0; i < inputs.length; i++) {
+        var tr = document.createElement("tr");
+        for(var j = 0; j < inputs[i].length; j++) {
+            var td = document.createElement("td");
+            td.appendChild(document.createTextNode(getBoolRepresentation(inputs[i][j])));
+            tr.appendChild(td);
+        }
+        var td = document.createElement("td");
+        td.appendChild(document.createTextNode(getBoolRepresentation(outputs[i])));
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+    }
+
+    table.appendChild(thead);
+    table.appendChild(tbody);
+
+    document.getElementById("truthTable").appendChild(table);
+}
+
+function getBoolRepresentation(bool) {
+    return (bool ? 'T' : 'F');
 }
