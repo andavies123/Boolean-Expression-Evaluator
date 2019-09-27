@@ -1,7 +1,57 @@
 html {
-    background-color: black;
+    background-color: #eee ;
 }
 
-.truthTable {
-    color: white;
+input {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: inset 0 1px 3px #ddd;
+    box-sizing: border-box;
+    display: block;
+    font-size: 40px;
+    margin: 50px auto;
+    padding: 10px;
+    text-align: center;
+    width: 50%;
+}
+
+table {
+    border-collapse: collapse;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    width: 60%;
+
+    box-shadow: 0 5px 10px #aaa;
+}
+
+th {
+    background-color: #eeeeee;
+}
+
+.outputTrue {
+    background-color: rgba(0, 255, 0, .5);
+}
+
+.outputFalse {
+    background-color: rgba(255, 0, 0, .5); 
+}
+
+thead th {
+    background-color: #ccc;
+    font-size: 30px;
+    font-weight: bold;
+}
+
+td, th {
+    border: 1px solid #777;
+    padding: 8px;
+}
+
+.true {
+    background-color: rgba(0, 255, 0, .25);
+}
+
+.false {
+    background-color: rgba(255, 0, 0, .25);
 }

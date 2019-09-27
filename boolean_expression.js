@@ -1,19 +1,37 @@
 const expressionInput = document.querySelector('#expression_input');
-const calculateBtn = document.querySelector('#calculate_button');
 
-calculateBtn.addEventListener('click', e=> {
-    createTruthTable(expressionInput.value.replace(/\s/g, ""));
-});
+expressionInput.oninput = validateExpression;
+
+function validateExpression(e) {
+    expressionInput.value = expressionInput.value.replace(/and/gi, "AND");
+    expressionInput.value = expressionInput.value.replace(/or/gi, "OR");
+    expressionInput.value = expressionInput.value.replace(/not/gi, "NOT");
+
+    createTruthTable(e.target.value);
+}
 
 var precedences = ['!', '&', '|'];
 
 function createTruthTable(expression) {
-    var returnVal = infixToPostfix(expression);
+    var newExpression = replaceVariables(expression);
+    var returnVal = infixToPostfix(newExpression);
     var postfixExpression = returnVal[0];
     var variables = returnVal[1];
+    if(validatePostfix(postfixExpression, variables))
+        expressionInput.setAttribute("class", "true");
+    else
+        expressionInput.setAttribute("class", "false");
     var inputs = fillTruthTableInputs(variables, []);
     var outputs = evaluateExpression(postfixExpression, inputs, variables);
     createTable(variables, expression, inputs, outputs);
+}
+
+function replaceVariables(expression) {
+    expression = expression.replace(/ /gi, "");
+    expression = expression.replace(/and/gi, "&");
+    expression = expression.replace(/or/gi, "|");
+    expression = expression.replace(/not/gi, "!");
+    return expression;
 }
 
 function infixToPostfix(expression) {
@@ -32,6 +50,33 @@ function infixToPostfix(expression) {
         postfixExpression += stack.pop();
     }
     return [postfixExpression, variables];
+}
+
+function validatePostfix(postfixExpression, variables) {
+    console.log(postfixExpression);
+    if(postfixExpression.length < 3)
+        return false;
+    if(!variables.includes(postfixExpression.charAt(0)))
+        return false;
+    if(postfixExpression.charAt(1) === '!') {
+        if(!variables.includes(postfixExpression.charAt(2)))
+            return false;
+    }
+    else if(!variables.includes(postfixExpression.charAt(1)))
+            return false;
+    if(!precedences.includes(postfixExpression.charAt(postfixExpression.length - 1)))
+        return false;
+    var operand = 0;
+    var operator = 0;
+    for(const c of postfixExpression) {
+        if(variables.includes(c))
+            operand++;
+        else if(c === '!')
+            continue;
+        else if(precedences.includes(c))
+            operator++;
+    }
+    return (operand === operator + 1);
 }
 
 function evaluateToken(token, stack, postfixExpression, variables) {
@@ -94,7 +139,6 @@ function fillTruthTableInputs(variables, inputs) {
 }
 
 function evaluateExpression(postfixExpression, inputs, variables) {
-    console.log(postfixExpression);
     var outputs = [];
     for(var i = 0; i < inputs.length; i++) {
 
@@ -137,24 +181,26 @@ function createTable(variables, expression, inputs, outputs) {
 
     var tr = document.createElement("tr");
     for(const c of variables) {
-        var td = document.createElement("td");
-        td.appendChild(document.createTextNode(c));
-        tr.appendChild(td);
+        var th = document.createElement("th");
+        th.appendChild(document.createTextNode(c));
+        tr.appendChild(th);
     }
-    var td = document.createElement("td");
-    td.appendChild(document.createTextNode(expression));
-    tr.appendChild(td);
+    var th = document.createElement("th");
+    th.appendChild(document.createTextNode(expression));
+    tr.appendChild(th);
     thead.appendChild(tr);
 
     for(var i = 0; i < inputs.length; i++) {
         var tr = document.createElement("tr");
         for(var j = 0; j < inputs[i].length; j++) {
-            var td = document.createElement("td");
-            td.appendChild(document.createTextNode(getBoolRepresentation(inputs[i][j])));
-            tr.appendChild(td);
+            tr.appendChild(createTableData(inputs[i][j]));
         }
         var td = document.createElement("td");
         td.appendChild(document.createTextNode(getBoolRepresentation(outputs[i])));
+        if(outputs[i])
+            td.setAttribute("class", "outputTrue");
+        else
+            td.setAttribute("class", "outputFalse");
         tr.appendChild(td);
         tbody.appendChild(tr);
     }
@@ -163,6 +209,16 @@ function createTable(variables, expression, inputs, outputs) {
     table.appendChild(tbody);
 
     document.getElementById("truthTable").appendChild(table);
+}
+
+function createTableData(bool) {
+    var td = document.createElement("td");
+    td.appendChild(document.createTextNode(getBoolRepresentation(bool)));
+    if(bool)
+        td.setAttribute("class", "true");
+    else
+        td.setAttribute("class", "false");
+    return td;
 }
 
 function getBoolRepresentation(bool) {
